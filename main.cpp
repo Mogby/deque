@@ -6,7 +6,7 @@
 #include "deque.h"
 
 template<typename data_type>
-std::ostream& operator<<(std::ostream& output, const deque<data_type> &to_print) {
+std::ostream& operator<<(std::ostream& output, const Deque<data_type> &to_print) {
     for (auto it = to_print.begin(); it != to_print.end(); ++it) {
         if (it != to_print.begin())
             output << ' ';
@@ -19,13 +19,13 @@ class DequeTest : public ::testing::Test {
 
 protected:
 
-    static void popElements(deque<int> &container, size_t amount) {
+    static void popElements(Deque<int> &container, size_t amount) {
         while (amount--) {
             container.pop_back();
         }
     }
     
-    static void pushElements(deque<int> &container, size_t amount) {
+    static void pushElements(Deque<int> &container, size_t amount) {
         while (amount--) {
             container.push_back(1337);
         }
@@ -46,7 +46,7 @@ protected:
         return maxTangent <= tangentLimit;
     }
 
-    unsigned int measureOperationTime(void (*operation)(deque<int>&, size_t), deque<int> &firstArgument,
+    unsigned int measureOperationTime(void (*operation)(Deque<int>&, size_t), Deque<int> &firstArgument,
             size_t secondArgument) {
         clock_t startTime = clock();
 
@@ -66,15 +66,15 @@ protected:
         stringDeque.push_front("hello");
 
         for (int count = 0; count < 1000; ++count) {
-            bigDeque.push_back(count);
+            bigDeque.push_front(999 - count);
         }
     }
 
-    deque<int> intDeque;
-    deque<float> floatDeque;
-    deque<std::string> stringDeque;
+    Deque<int> intDeque;
+    Deque<float> floatDeque;
+    Deque<std::string> stringDeque;
 
-    deque<int> bigDeque;
+    Deque<int> bigDeque;
 
 };
 
@@ -166,8 +166,24 @@ TEST_F(DequeTest, ComplexityTest) {
 }
 
 TEST_F(DequeTest, IteratorTest) {
-    deque<int>::iterator iterator = bigDeque.begin();
-    deque<int>::iterator secondIterator;
+    for (auto iterator = bigDeque.begin(); iterator < bigDeque.end(); ++iterator) {
+        ASSERT_EQ(*iterator, iterator - bigDeque.begin());
+    }
+
+    for (auto iterator = bigDeque.end() - 1; iterator > bigDeque.begin(); --iterator) {
+        ASSERT_EQ(*iterator, iterator - bigDeque.begin());
+    }
+
+    for (auto iterator = bigDeque.rbegin(); iterator < bigDeque.rend(); ++iterator) {
+        ASSERT_EQ(*iterator, bigDeque.rend() - iterator - 1);
+    }
+
+    for (auto iterator = bigDeque.rend() - 1; iterator > bigDeque.rbegin(); --iterator) {
+        ASSERT_EQ(*iterator, bigDeque.rend() - iterator - 1);
+    }
+
+    Deque<int>::iterator iterator = bigDeque.begin();
+    Deque<int>::iterator secondIterator;
 
     secondIterator = iterator;
 
@@ -188,8 +204,8 @@ TEST_F(DequeTest, IteratorTest) {
     ASSERT_EQ(iterator, secondIterator);
     ASSERT_EQ(*iterator, *secondIterator);
 
-    deque<int>::reverse_iterator reverseIterator = bigDeque.rbegin();
-    deque<int>::reverse_iterator secondReverseIterator = bigDeque.rbegin();
+    Deque<int>::reverse_iterator reverseIterator = bigDeque.rbegin();
+    Deque<int>::reverse_iterator secondReverseIterator = bigDeque.rbegin();
 
     reverseIterator += bigDeque.size() - 11;
     secondReverseIterator += bigDeque.size() - 11;
@@ -199,6 +215,15 @@ TEST_F(DequeTest, IteratorTest) {
 
     ASSERT_LT(bigDeque.begin(), bigDeque.end());
     ASSERT_GT(bigDeque.rend(), bigDeque.rbegin());
+
+    ASSERT_LT(bigDeque.begin() + 10, bigDeque.end() - 20);
+    ASSERT_GT(bigDeque.rend() - 10, bigDeque.rbegin() + 20);
+
+    ASSERT_EQ(bigDeque.begin() - bigDeque.end(), -static_cast<int>(bigDeque.size()));
+    ASSERT_EQ(bigDeque.end() - bigDeque.begin(), static_cast<int>(bigDeque.size()));
+    ASSERT_EQ(bigDeque.rbegin() - bigDeque.rend(), -static_cast<int>(bigDeque.size()));
+    ASSERT_EQ(bigDeque.rend() - bigDeque.rbegin(), static_cast<int>(bigDeque.size()));
+    ASSERT_EQ(intDeque.rbegin() - intDeque.rend(), 0);
 }
 
 int main(int argc, char **argv) {

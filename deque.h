@@ -6,28 +6,33 @@
 
 #include <iterator>
 
-template <typename data_type>
-class deque {
+template <typename DataType>
+class Deque {
 
-    template<typename value_type, typename container_type, int move_direction>
-    class deque_iterator : public std::iterator<std::random_access_iterator_tag, value_type> {
+    template<typename ValueType, typename ContainerType, int moveDirection>
+    class deque_iterator : public std::iterator<std::random_access_iterator_tag, ValueType> {
 
-    typedef deque_iterator<value_type, container_type, move_direction> iterator;
-    typedef typename std::iterator_traits<iterator>::pointer pointer;
+    typedef deque_iterator<ValueType, ContainerType, moveDirection> iterator;
     
     private:
 
-        container_type *container;
+        ContainerType *container;
         size_t offset;
 
-        void move(int move_offset) {
-            offset += move_offset * move_direction;
+        size_t getIndex() const {
+            int index = static_cast<int>(offset) * moveDirection - (moveDirection < 0 ? 1 : 0);
+
+            if (index < 0) {
+                index += container->size();
+            }
+
+            return index;
         }
 
     public:
 
         iterator& operator++() {
-            move(1);
+            ++offset;
 
             return *this;
         }
@@ -35,13 +40,13 @@ class deque {
         iterator operator++(int) {
             iterator res = *this;
 
-            move(1);
+            ++offset;
 
             return res;
         }
 
         iterator& operator--() {
-            move(-1);
+            --offset;
 
             return *this;
         }
@@ -49,13 +54,13 @@ class deque {
         iterator operator--(int) {
             iterator res = *this;
 
-            move(-1);
+            --offset;
 
             return res;
         }
 
         iterator& operator+=(int delta_offset) {
-            move(delta_offset);
+            offset += delta_offset;
 
             return *this;
         }
@@ -68,7 +73,7 @@ class deque {
         }
 
         iterator& operator-=(int delta_offset) {
-            move(-delta_offset);
+            offset -= delta_offset;
 
             return *this;
         }
@@ -84,16 +89,16 @@ class deque {
             return static_cast<int>(offset) - static_cast<int>(other.offset);
         }
 
-        value_type& operator*() const {
-            return (*container)[offset];
+        ValueType& operator*() const {
+            return (*container)[getIndex()];
         }
 
-        value_type& operator[](const int delta_offset) const {
+        ValueType& operator[](int delta_offset) const {
             return *(*this + delta_offset);
         }
 
-        value_type* operator->() const {
-            return &((*container)[offset]);
+        ValueType* operator->() const {
+            return &((*container)[getIndex()]);
         }
 
         iterator& operator=(const iterator &other) {
@@ -130,7 +135,7 @@ class deque {
 
 
 
-        deque_iterator(container_type *container, size_t offset) : 
+        deque_iterator(ContainerType *container, size_t offset) : 
             container(container), offset(offset) {}
 
         deque_iterator(const iterator &other) {
@@ -147,7 +152,7 @@ class deque {
 
 private:
 
-    data_type* vector;
+    DataType* vector;
     
     size_t vector_size;
 
@@ -173,33 +178,33 @@ private:
 
 public:
 
-    typedef deque_iterator<data_type, deque<data_type>, 1> iterator;
+    typedef deque_iterator<DataType, Deque<DataType>, 1> iterator;
 
-    typedef deque_iterator<const data_type, const deque<data_type>, 1> const_iterator;
+    typedef deque_iterator<const DataType, const Deque<DataType>, 1> const_iterator;
 
-    typedef deque_iterator<data_type, deque<data_type>, -1> reverse_iterator;
+    typedef deque_iterator<DataType, Deque<DataType>, -1> reverse_iterator;
     
-    typedef deque_iterator<const data_type, const deque<data_type>, -1> const_reverse_iterator;
+    typedef deque_iterator<const DataType, const Deque<DataType>, -1> const_reverse_iterator;
 
 
 
-    void push_back(const data_type& new_element);
+    void push_back(const DataType& new_element);
 
     void pop_back();
 
-    void push_front(const data_type& new_element);
+    void push_front(const DataType& new_element);
 
     void pop_front();
 
 
 
-    data_type& back();
+    DataType& back();
 
-    const data_type& back() const;
+    const DataType& back() const;
 
-    data_type& front();
+    DataType& front();
 
-    const data_type& front() const;
+    const DataType& front() const;
 
 
 
@@ -235,33 +240,38 @@ public:
 
 
 
-    data_type& operator[](const size_t index);
+    DataType& operator[](size_t index);
 
-    const data_type& operator[](const size_t index) const;
+    const DataType& operator[](size_t index) const;
 
-    bool operator==(const deque<data_type> &other) const;
+    bool operator==(const Deque<DataType> &other) const;
 
 
 
-    deque();
+    Deque();
 
-    deque(const deque& other);
+    Deque(const Deque& other);
 
-    virtual ~deque();
+    virtual ~Deque();
 
 };
 
-template <typename data_type>
-void deque<data_type>::resize_vector(size_t new_capacity) {
-    data_type* new_vector = new data_type[new_capacity];
+/*template <typename DataType, typename ValueType, typename ContainerType, int moveDirection>
+typename Deque<DataType>::template deque_iterator<ValueType, ContainerType, 
+    moveDirection> operator+(int offset, const typename Deque<DataType>::template deque_iterator<
+    ValueType, ContainerType, moveDirection> &iterator) {
+    return iterator + offset;
+}*/
+
+template <typename DataType>
+void Deque<DataType>::resize_vector(size_t new_capacity) {
+    DataType* new_vector = new DataType[new_capacity];
 
     for (size_t offset = 0; offset < vector_size; ++offset) {
-        new_vector[offset] = vector[(begin_offset + offset) % vector_capacity];
+        new_vector[offset] = vector[move_index(begin_offset, offset)];
     }
 
-    if (vector) {
-        delete[] vector;
-    }
+    delete[] vector;
 
     vector = new_vector;
     vector_capacity = new_capacity;
@@ -272,27 +282,20 @@ void deque<data_type>::resize_vector(size_t new_capacity) {
     return;
 }
 
-template <typename data_type>
-inline void deque<data_type>::adapt_vector(size_t new_size) {
-    vector_size= new_size;
+template <typename DataType>
+inline void Deque<DataType>::adapt_vector(size_t new_size) {
+    vector_size = new_size;
 
-    if (vector_size* 4 < vector_capacity && vector_capacity / 4 >= 4) {
+    if (new_size * 4 < vector_capacity && vector_capacity / 4 >= 4) {
         resize_vector(vector_capacity / 4);
-    } else if (vector_size* 2 > vector_capacity) {
+    } else if (new_size * 2 > vector_capacity) {
         resize_vector(vector_capacity * 2);
     }
 }
 
-template <typename data_type, typename value_type, typename container_type, int move_direction>
-typename deque<data_type>::template deque_iterator<value_type, container_type, 
-    move_direction> operator+(int offset, const typename deque<data_type>::template deque_iterator<
-    value_type, container_type, move_direction> &iterator) {
-    return iterator + offset;
-}
-
-template <typename data_type>
-inline size_t deque<data_type>::move_index(size_t index, int offset) const {
-    offset %= vector_capacity;
+template <typename DataType>
+inline size_t Deque<DataType>::move_index(size_t index, int offset) const {
+    offset %= static_cast<int>(vector_capacity);
     if (offset < 0) {
         offset += vector_capacity;
     }
@@ -300,190 +303,191 @@ inline size_t deque<data_type>::move_index(size_t index, int offset) const {
     return (index + offset) % vector_capacity;
 }
 
-template <typename data_type>
-inline size_t deque<data_type>::next_index(size_t index) const {
+template <typename DataType>
+inline size_t Deque<DataType>::next_index(size_t index) const {
     return move_index(index, 1);
 }
 
-template <typename data_type>
-inline size_t deque<data_type>::previous_index(size_t index) const {
+template <typename DataType>
+inline size_t Deque<DataType>::previous_index(size_t index) const {
     return move_index(index, -1);
 }
 
 
 
-template <typename data_type>
-void deque<data_type>::push_back(const data_type& new_element) {
+template <typename DataType>
+void Deque<DataType>::push_back(const DataType& new_element) {
     vector[end_offset] = new_element;
     end_offset = next_index(end_offset);
 
-    adapt_vector(vector_size+ 1);
+    adapt_vector(vector_size + 1);
 }
 
-template <typename data_type>
-void deque<data_type>::pop_back() {
+template <typename DataType>
+void Deque<DataType>::pop_back() {
     end_offset = previous_index(end_offset);
 
-    adapt_vector(vector_size- 1);
+    adapt_vector(vector_size - 1);
 }
 
-template <typename data_type>
-void deque<data_type>::push_front(const data_type& new_element) {
+template <typename DataType>
+void Deque<DataType>::push_front(const DataType& new_element) {
     begin_offset = previous_index(begin_offset);
     vector[begin_offset] = new_element;
 
-    adapt_vector(vector_size+ 1);
+    adapt_vector(vector_size + 1);
 }
 
-template <typename data_type>
-void deque<data_type>::pop_front() {
+template <typename DataType>
+void Deque<DataType>::pop_front() {
     begin_offset = next_index(begin_offset);
 
-    adapt_vector(vector_size- 1);
+    adapt_vector(vector_size - 1);
 }
 
 
 
-template <typename data_type>
-data_type& deque<data_type>::back() {
+template <typename DataType>
+DataType& Deque<DataType>::back() {
     return vector[previous_index(end_offset)];
 }
 
-template <typename data_type>
-const data_type& deque<data_type>::back() const {
+template <typename DataType>
+const DataType& Deque<DataType>::back() const {
     return vector[previous_index(end_offset)];
 }
 
-template <typename data_type>
-data_type& deque<data_type>::front() {
+template <typename DataType>
+DataType& Deque<DataType>::front() {
     return vector[begin_offset];
 }
 
-template <typename data_type>
-const data_type& deque<data_type>::front() const {
+template <typename DataType>
+const DataType& Deque<DataType>::front() const {
     return vector[begin_offset];
 }
 
 
 
-template <typename data_type>
-bool deque<data_type>::empty() const {
+template <typename DataType>
+bool Deque<DataType>::empty() const {
     return !vector_size;
 }
 
-template <typename data_type>
-size_t deque<data_type>::size() const {
+template <typename DataType>
+size_t Deque<DataType>::size() const {
     return vector_size;
 }
 
 
 
-template <typename data_type>
-typename deque<data_type>::iterator deque<data_type>::begin() {
-    return typename deque<data_type>::iterator(this, 0);
+template <typename DataType>
+typename Deque<DataType>::iterator Deque<DataType>::begin() {
+    return typename Deque<DataType>::iterator(this, 0);
 }
 
-template <typename data_type>
-typename deque<data_type>::const_iterator deque<data_type>::begin() const {
-    return typename deque<data_type>::const_iterator(this, 0);
+template <typename DataType>
+typename Deque<DataType>::const_iterator Deque<DataType>::begin() const {
+    return typename Deque<DataType>::const_iterator(this, 0);
 }
 
-template <typename data_type>
-typename deque<data_type>::const_iterator deque<data_type>::cbegin() const {
-    return typename deque<data_type>::const_iterator(this, 0);
+template <typename DataType>
+typename Deque<DataType>::const_iterator Deque<DataType>::cbegin() const {
+    return typename Deque<DataType>::const_iterator(this, 0);
 }
 
-template <typename data_type>
-typename deque<data_type>::iterator deque<data_type>::end() {
-    return typename deque<data_type>::iterator(this, vector_size);
+template <typename DataType>
+typename Deque<DataType>::iterator Deque<DataType>::end() {
+    return typename Deque<DataType>::iterator(this, vector_size);
 }
 
-template <typename data_type>
-typename deque<data_type>::const_iterator deque<data_type>::end() const {
-    return typename deque<data_type>::const_iterator(this, vector_size);
+template <typename DataType>
+typename Deque<DataType>::const_iterator Deque<DataType>::end() const {
+    return typename Deque<DataType>::const_iterator(this, vector_size);
 }
 
-template <typename data_type>
-typename deque<data_type>::const_iterator deque<data_type>::cend() const {
-    return typename deque<data_type>::const_iterator(this, vector_size);
+template <typename DataType>
+typename Deque<DataType>::const_iterator Deque<DataType>::cend() const {
+    return typename Deque<DataType>::const_iterator(this, vector_size);
 }
 
-template <typename data_type>
-typename deque<data_type>::reverse_iterator deque<data_type>::rbegin() {
-    return typename deque<data_type>::reverse_iterator(this, vector_size - 1);
+template <typename DataType>
+typename Deque<DataType>::reverse_iterator Deque<DataType>::rbegin() {
+    return typename Deque<DataType>::reverse_iterator(this, 0);
 }
 
-template <typename data_type>
-typename deque<data_type>::const_reverse_iterator deque<data_type>::rbegin() const {
-    return typename deque<data_type>::const_reverse_iterator(this, vector_size - 1);
+template <typename DataType>
+typename Deque<DataType>::const_reverse_iterator Deque<DataType>::rbegin() const {
+    return typename Deque<DataType>::const_reverse_iterator(this, 0);
 }
 
-template <typename data_type>
-typename deque<data_type>::const_reverse_iterator deque<data_type>::crbegin() const {
-    return typename deque<data_type>::const_reverse_iterator(this, vector_size - 1);
+template <typename DataType>
+typename Deque<DataType>::const_reverse_iterator Deque<DataType>::crbegin() const {
+    return typename Deque<DataType>::const_reverse_iterator(this, 0);
 }
 
-template <typename data_type>
-typename deque<data_type>::reverse_iterator deque<data_type>::rend() {
-    return typename deque<data_type>::reverse_iterator(this, -1);
+template <typename DataType>
+typename Deque<DataType>::reverse_iterator Deque<DataType>::rend() {
+    return typename Deque<DataType>::reverse_iterator(this, vector_size);
 }
 
-template <typename data_type>
-typename deque<data_type>::const_reverse_iterator deque<data_type>::rend() const {
-    return typename deque<data_type>::const_reverse_iterator(this, -1);
+template <typename DataType>
+typename Deque<DataType>::const_reverse_iterator Deque<DataType>::rend() const {
+    return typename Deque<DataType>::const_reverse_iterator(this, vector_size);
 }
 
-template <typename data_type>
-typename deque<data_type>::const_reverse_iterator deque<data_type>::crend() const {
-    return typename deque<data_type>::const_reverse_iterator(this, -1);
+template <typename DataType>
+typename Deque<DataType>::const_reverse_iterator Deque<DataType>::crend() const {
+    return typename Deque<DataType>::const_reverse_iterator(this, vector_size);
 }
 
 
-template <typename data_type>
-data_type& deque<data_type>::operator[](const size_t index) {
+template <typename DataType>
+DataType& Deque<DataType>::operator[](size_t index) {
     return vector[move_index(begin_offset, index)];
 }
 
-template <typename data_type>
-const data_type& deque<data_type>::operator[](const size_t index) const {
+template <typename DataType>
+const DataType& Deque<DataType>::operator[](size_t index) const {
     return vector[move_index(begin_offset, index)];
 }
 
-template <typename data_type>
-bool deque<data_type>::operator==(const deque<data_type> &other) const {
+/*template <typename DataType>
+bool Deque<DataType>::operator==(const Deque<DataType> &other) const {
     return vector == other.vector;
-}
+}*/
 
 
 
-template <typename data_type>
-deque<data_type>::deque() {
-    vector = nullptr;
-    vector_size= 0;
+template <typename DataType>
+Deque<DataType>::Deque() {
+    vector = new DataType[4];
+
+    vector_capacity = 4;
+
+    vector_size = 0;
+
     begin_offset = end_offset = 0;
-
-    resize_vector(4);
 }
 
-template <typename data_type>
-deque<data_type>::deque(const deque& other) {
-    vector = nullptr;
+template <typename DataType>
+Deque<DataType>::Deque(const Deque& other) {
+    vector = new DataType[other.vector_capacity];
 
-    if (vector_capacity != other.vector_capacity) {
-        resize_vector(other.vector_capacity);
-    }
+    vector_capacity = other.vector_capacity;
 
-    for (size_t offset = 0; offset < other.vector_size; ++offset) {
-        vector[offset] = other.vector[(other.begin_offset + offset) % other.vector_capacity];
+    vector_size = other.vector_size;
+
+    for (size_t offset = 0; offset < other.size(); ++offset) {
+        vector[offset] = other[offset];
     }
-    vector_size= other.vector_size;
 
     begin_offset = 0;
     end_offset = vector_size;
 }
 
-template <typename data_type>
-deque<data_type>::~deque() {
+template <typename DataType>
+Deque<DataType>::~Deque() {
     delete[] vector;
 }
 
