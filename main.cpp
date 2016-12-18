@@ -174,12 +174,15 @@ TEST_F(DequeTest, IteratorTest) {
         ASSERT_EQ(*iterator, iterator - bigDeque.begin());
     }
 
+    Deque<int> testDeque;
+    ASSERT_EQ(0, testDeque.rbegin() - testDeque.rend());
+
     for (auto iterator = bigDeque.rbegin(); iterator < bigDeque.rend(); ++iterator) {
-        ASSERT_EQ(*iterator, bigDeque.rend() - iterator - 1);
+        ASSERT_EQ(*iterator, (bigDeque.rend() - iterator) - 1);
     }
 
-    for (auto iterator = bigDeque.rend() - 1; iterator > bigDeque.rbegin(); --iterator) {
-        ASSERT_EQ(*iterator, bigDeque.rend() - iterator - 1);
+    for (auto iterator = bigDeque.rend() - 1; iterator < bigDeque.rbegin(); --iterator) {
+        ASSERT_EQ(*iterator, iterator - bigDeque.rbegin() - 1); 
     }
 
     Deque<int>::iterator iterator = bigDeque.begin();
